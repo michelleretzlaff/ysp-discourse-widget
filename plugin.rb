@@ -4,8 +4,7 @@
 # authors: You
 # required_version: 3.0.0
 
-enabled_site_setting :chat_widget_jwt_secret
-enabled_site_setting :chat_widget_tenant_id
+require "jwt"
 
 after_initialize do
   module ::ChatWidgetJwt
@@ -50,6 +49,11 @@ after_initialize do
 
       token = JWT.encode(payload, secret, "HS256")
       render json: { token: token }
+    rescue Discourse::NotLoggedIn, Discourse::InvalidAccess
+        render_json_error("Unauthorized", status: 401)
+    rescue => e
+        Rails.logger.error("[chat-widget-jwt] token error: #{e.class}: #{e.message}\n#{e.backtrace&.first(3)&.join("\n")}")
+        render_json_error("Server error", status: 500)
     end
   end
 end
