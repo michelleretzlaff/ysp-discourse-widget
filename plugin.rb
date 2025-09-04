@@ -1,4 +1,4 @@
-# name: chat-widget-jwt
+# name: ysp-discourse-widget
 # about: Issues a short-lived JWT for the chat widget using the WordPress user id
 # version: 0.1
 # authors: You
