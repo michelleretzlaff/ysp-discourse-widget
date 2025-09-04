@@ -1,0 +1,7 @@
+plugins:
+  chat_widget_jwt_secret:
+    default: ""
+    client: false
+  chat_widget_tenant_id:
+    default: 1
+    client: false

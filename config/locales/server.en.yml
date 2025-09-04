@@ -1,0 +1,4 @@
+en:
+  site_settings:
+    chat_widget_jwt_secret: "Secret used to sign chat widget JWT (HS256)"
+    chat_widget_tenant_id: "Tenant ID to include in the chat widget JWT"
