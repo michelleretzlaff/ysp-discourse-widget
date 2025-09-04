@@ -26,32 +26,28 @@ after_initialize do
     requires_login
 
     def show
-      guardian.ensure_admin!
+        secret = SiteSetting.chat_widget_jwt_secret.to_s
+        return render_json_error("Missing secret (set chat_widget_jwt_secret)", status: 422) if secret.blank?
 
-      secret = SiteSetting.chat_widget_jwt_secret
-      raise Discourse::InvalidParameters.new(:chat_widget_jwt_secret) if secret.blank?
+        user = current_user
 
-      user = current_user
+        wp_user_id =
+          user.single_sign_on_record&.external_id ||
+          user.custom_fields["wp_user_id"] ||
+          user.id.to_s
 
-      # Prefer DiscourseConnect (SSO) external_id (usually the WordPress user ID)
-      wp_user_id =
-        user.single_sign_on_record&.external_id ||
-        user.custom_fields["wp_user_id"] ||
-        user.id.to_s
+        payload = {
+          user_id:   wp_user_id.to_i,
+          tenant_id: SiteSetting.chat_widget_tenant_id.to_i,
+          email:     user.email,
+          iat:       Time.now.to_i,
+          exp:       (Time.now + 1.hour).to_i
+        }
 
-      payload = {
-        user_id:   wp_user_id.to_i,
-        tenant_id: SiteSetting.chat_widget_tenant_id.to_i,
-        email:     user.email,
-        iat:       Time.now.to_i,
-        exp:       (Time.now + 1.hour).to_i
-      }
+        token = JWT.encode(payload, secret, "HS256")
 
-      token = JWT.encode(payload, secret, "HS256")
-      render json: { token: token }
-    rescue Discourse::NotLoggedIn, Discourse::InvalidAccess
-        render_json_error("Unauthorized", status: 401)
-    rescue => e
+        render json: { token: token }
+      rescue => e
         Rails.logger.error("[chat-widget-jwt] token error: #{e.class}: #{e.message}\n#{e.backtrace&.first(3)&.join("\n")}")
         render_json_error("Server error", status: 500)
     end
